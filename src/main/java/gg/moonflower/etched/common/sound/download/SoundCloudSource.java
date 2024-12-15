@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.mojang.logging.LogUtils;
 import gg.moonflower.etched.api.record.TrackData;
 import gg.moonflower.etched.api.sound.download.SoundDownloadSource;
 import gg.moonflower.etched.api.util.DownloadProgressListener;
@@ -136,10 +137,17 @@ public class SoundCloudSource implements SoundDownloadSource {
             String artist = GsonHelper.getAsString(user, "username");
             String title = GsonHelper.getAsString(json, "title");
             String kind = GsonHelper.getAsString(json, "kind");
+
+            double durationMs = GsonHelper.getAsDouble(json, "duration");
+            int durationInTicks = (int) (
+                    (Math.floor(durationMs / 1000) * 20)
+                    + Math.ceil(((durationMs / 1000) % 1)* 20)
+            ) + 20;
+
             if ("playlist".equals(kind)) {
                 JsonArray tracksJson = GsonHelper.getAsJsonArray(json, "tracks");
                 List<TrackData> tracks = new ArrayList<>();
-                tracks.add(new TrackData(url, artist, Component.literal(title)));
+                tracks.add(new TrackData(url, artist, durationInTicks, Component.literal(title)));
 
                 for (int i = 0; i < tracksJson.size(); i++) {
                     try {
@@ -151,7 +159,7 @@ public class SoundCloudSource implements SoundDownloadSource {
                         String trackUrl = GsonHelper.getAsString(trackJson, "permalink_url");
                         String trackArtist = GsonHelper.getAsString(trackUser, "username");
                         String trackTitle = GsonHelper.getAsString(trackJson, "title");
-                        tracks.add(new TrackData(trackUrl, trackArtist, Component.literal(trackTitle)));
+                        tracks.add(new TrackData(trackUrl, trackArtist, durationInTicks, Component.literal(trackTitle)));
                     } catch (JsonParseException e) {
                         LOGGER.error("Failed to parse track: " + url + "[" + i + "]", e);
                     }
@@ -160,7 +168,7 @@ public class SoundCloudSource implements SoundDownloadSource {
                 return tracks;
             }
 
-            return Collections.singletonList(new TrackData(url, artist, Component.literal(title)));
+            return Collections.singletonList(new TrackData(url, artist, durationInTicks, Component.literal(title)));
         });
     }
 

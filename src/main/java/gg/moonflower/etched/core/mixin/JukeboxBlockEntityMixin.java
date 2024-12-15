@@ -1,5 +1,6 @@
 package gg.moonflower.etched.core.mixin;
 
+import com.mojang.logging.LogUtils;
 import gg.moonflower.etched.api.record.PlayableRecord;
 import gg.moonflower.etched.common.network.EtchedMessages;
 import gg.moonflower.etched.common.network.play.ClientboundPlayMusicPacket;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -51,6 +53,15 @@ public abstract class JukeboxBlockEntityMixin extends BlockEntity implements Con
 
     @Shadow
     protected abstract void spawnMusicParticles(Level level, BlockPos pos);
+
+    @Shadow protected abstract void stopPlaying();
+
+    @Shadow protected abstract void tick(Level level, BlockPos pos, BlockState state);
+
+    @Shadow public abstract void popOutRecord();
+
+    @Unique
+    private int etched$tickCount = 0;
 
     public JukeboxBlockEntityMixin(BlockEntityType<?> type, BlockPos pos, BlockState blockState) {
         super(type, pos, blockState);
@@ -86,7 +97,11 @@ public abstract class JukeboxBlockEntityMixin extends BlockEntity implements Con
         if (this.isRecordPlaying()) {
             Item item = this.getFirstItem().getItem();
             if (!(item instanceof RecordItem) && item instanceof PlayableRecord) {
+                final boolean hasDuration = ((PlayableRecord) item).getAlbum(this.getFirstItem()).get().tickDuration() > 0;
                 ++this.ticksSinceLastEvent;
+
+                if (hasDuration)
+                    this.etched$tickCount++;
 
                 // Allow music particles and events to play for custom records
                 if (this.shouldSendJukeboxPlayingEvent()) {
@@ -96,6 +111,13 @@ public abstract class JukeboxBlockEntityMixin extends BlockEntity implements Con
                 } else {
                     this.ticksSinceLastEvent--;
                 }
+
+                if (hasDuration && this.etched$tickCount >= ((PlayableRecord) item).getAlbum(this.getFirstItem()).get().tickDuration()) {
+                    this.stopPlaying();
+                    this.etched$tickCount = 0;
+                }
+            } else {
+                this.etched$tickCount = 0;
             }
         }
     }

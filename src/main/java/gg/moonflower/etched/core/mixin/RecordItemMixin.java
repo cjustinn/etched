@@ -40,9 +40,9 @@ public abstract class RecordItemMixin extends Item implements PlayableRecord {
 
         String[] parts = desc.getString().split("-", 2);
         if (parts.length < 2) {
-            return new TrackData[]{new TrackData(this.getSound().getLocation().toString(), "Minecraft", desc)};
+            return new TrackData[]{new TrackData(this.getSound().getLocation().toString(), "Minecraft", 0, desc)};
         }
-        return new TrackData[]{new TrackData(this.getSound().getLocation().toString(), parts[0].trim(), Component.literal(parts[1].trim()).withStyle(desc.getStyle()))};
+        return new TrackData[]{new TrackData(this.getSound().getLocation().toString(), parts[0].trim(), 0, Component.literal(parts[1].trim()).withStyle(desc.getStyle()))};
     });
 
     private RecordItemMixin(Properties properties) {

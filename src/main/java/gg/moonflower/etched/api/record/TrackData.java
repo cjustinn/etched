@@ -22,12 +22,13 @@ import java.util.regex.Pattern;
  * @author Ocelot
  * @since 2.0.0
  */
-public record TrackData(String url, String artist, Component title) {
+public record TrackData(String url, String artist, int tickDuration, Component title) {
 
-    public static final TrackData EMPTY = new TrackData(null, "Unknown", Component.literal("Custom Music"));
+    public static final TrackData EMPTY = new TrackData(null, "Unknown", 0, Component.literal("Custom Music"));
     public static final Codec<TrackData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("Url").forGetter(TrackData::url),
             Codec.STRING.optionalFieldOf("Author", EMPTY.artist()).forGetter(TrackData::artist),
+            Codec.INT.optionalFieldOf("TickDuration", EMPTY.tickDuration()).forGetter(TrackData::tickDuration),
             Codec.STRING.optionalFieldOf("Title", Component.Serializer.toJson(EMPTY.title())).<Component>xmap(json -> {
                 if (!json.startsWith("{")) {
                     return Component.literal(json);
@@ -99,23 +100,26 @@ public record TrackData(String url, String artist, Component title) {
         if (this.artist != null) {
             nbt.putString("Author", this.artist);
         }
+        if (this.tickDuration != 0) {
+            nbt.putInt("TickDuration", this.tickDuration);
+        }
         return nbt;
     }
 
     public TrackData withUrl(String url) {
-        return new TrackData(url, this.artist, this.title);
+        return new TrackData(url, this.artist, this.tickDuration, this.title);
     }
 
     public TrackData withArtist(String artist) {
-        return new TrackData(this.url, artist, this.title);
+        return new TrackData(this.url, artist, this.tickDuration, this.title);
     }
 
     public TrackData withTitle(String title) {
-        return new TrackData(this.url, this.artist, Component.literal(title));
+        return new TrackData(this.url, this.artist, this.tickDuration, Component.literal(title));
     }
 
     public TrackData withTitle(Component title) {
-        return new TrackData(this.url, this.artist, title);
+        return new TrackData(this.url, this.artist, this.tickDuration, title);
     }
 
     /**
